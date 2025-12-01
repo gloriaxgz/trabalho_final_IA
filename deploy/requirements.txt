@@ -6,4 +6,4 @@ pathlib
 scikit-learn
 matplotlib.pyplot
 seaborn
-plotly
+plotly-express
