@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
+from pathlib import Path
 
 
 st.set_page_config(page_title="Preditor de Condição Médica", layout="wide") 
@@ -94,16 +95,44 @@ def next_profile():
     initialize_session_state(new_profile_data)
 
 
-@st.cache_resource
+    
+@st.cache_resource()
 def load_resources():
-    """Carrega o modelo, scaler e label encoder salvos."""
+    """
+    Carrega o modelo, scaler e label encoder salvos,
+    garantindo que o caminho do arquivo seja sempre encontrado
+    usando a localização do próprio app.py (pathlib).
+    """
+
+    # Obtém o caminho base do diretório onde este script (app.py) está
+    # SÓ FUNCIONA EM AMBIENTES ONDE __file__ ESTÁ DISPONÍVEL (quase todos)
+    BASE_DIR = Path(__file__).resolve().parent
+
+    # Define os caminhos completos
+    MODEL_PATH = BASE_DIR / "modelo_random_forest.pkl"
+    SCALER_PATH = BASE_DIR / "scaler_base.pkl"
+    LE_PATH = BASE_DIR / "label_encoder.pkl"
+
+    model, scaler, le = None, None, None
+
     try:
-        model = joblib.load('modelo_random_forest.pkl')
-        scaler = joblib.load('scaler_base.pkl')
-        le = joblib.load('label_encoder.pkl')
+        # Tenta carregar os arquivos usando o caminho completo e seguro
+        model = joblib.load(MODEL_PATH)
+        scaler = joblib.load(SCALER_PATH)
+        le = joblib.load(LE_PATH)
+
+        # st.success("Recursos de Machine Learning carregados com sucesso.") 
+        # (Remover st.success para produção, mas pode ajudar no debug)
         return model, scaler, le
+
     except FileNotFoundError as e:
-        st.error(f"Erro fatal: Arquivo essencial '{e.filename}' não encontrado. Certifique-se de que os arquivos .pkl estejam na mesma pasta do app.py.")
+        # Exibe o erro de forma clara no Streamlit
+        st.error(f"Erro fatal: Arquivo essencial '{e.filename}' não encontrado.")
+        st.error("Por favor, verifique se todos os arquivos .pkl (modelo, scaler e encoder) estão no mesmo diretório do app.py e foram incluídos no seu deploy.")
+        return None, None, None
+    except Exception as e:
+        # Captura outros erros (ex: arquivo corrompido)
+        st.error(f"Erro inesperado ao carregar recursos: {e}")
         return None, None, None
 
 model, scaler, le = load_resources()
